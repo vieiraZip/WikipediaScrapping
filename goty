@@ -1,0 +1,36 @@
+const axios = require('axios')
+const cheerio = require('cheerio')
+const fs = require('fs')
+const url = `https://pt.wikipedia.org/wiki/Jogo_do_Ano`
+
+
+async function getGoty(url){
+  const { data } = await axios.get(url)
+  const $ = cheerio.load(data)
+  const dados = $('.wikitable tbody').eq(3).text()
+  const titulo = $('.mw-headline').eq(4).text() // Deixar titulo 1 a mais do que a tabela
+  const lista = dados.split('\n').filter((palavra) => palavra.trim() !== '')
+  lista.splice(0, 0, titulo)
+  return lista
+  }
+
+
+async function tratamento(){
+  const lista = await getGoty(url)
+  const jogos = []
+
+  for (let i = 5; i < lista.length; i += 4) {
+    const obj = {
+      premiacao: lista[0],
+      ano: lista[i],
+      jogo: lista[i + 1],
+      genero: lista[i + 2],
+      produtora: lista[i + 3],
+    };
+    jogos.push(obj)
+  }
+  console.table(jogos)
+  const newobj = JSON.stringify(jogos, null, 1)
+  fs.writeFileSync('./jogos.json', newobj, 'utf-8')
+}
+tratamento()
